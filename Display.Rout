@@ -1,0 +1,83 @@
+
+R version 3.3.0 (2016-05-03) -- "Supposedly Educational"
+Copyright (C) 2016 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> setwd("/home/chris/morck/scripts/transit/output")
+> debug=0
+> today <- format(Sys.Date(), format = "%Y%m%d")
+> cur_hour<-format(Sys.time(),"%H")
+> cur_min<-format(Sys.time(),"%M")
+> 
+> if(debug==1){
++ today<-20160829
++ cur_hour=4
++ cur_min=50
++ }
+> 
+> current_time<-(as.integer(cur_hour)*60)+as.integer(cur_min)
+> 
+> TimeTable<-read.csv(paste("../output/",today,".csv",sep=""))
+> 
+> #Remove Depatures in the past
+> TimeTable$departtime<-(as.integer(substr(paste(TimeTable[,'Depart']),1,2))*60)+as.integer(substr(TimeTable[,'Depart'],4,6))
+> TimeTable$min_to_depart<-TimeTable$departtime-current_time
+> TimeTable<-TimeTable[TimeTable$min_to_depart>0,]
+> 
+> 
+> startlocation<-'Michigan & 18th Street'
+> endlocation<-'Adams & Wells'
+> 
+> 
+> sink('../output/timetable.txt', append = FALSE, split = FALSE)
+> cat(
++   "\n",
++   "     ",format(Sys.time(), format = "%A %B %d %Y %H:%M"), "\n",
++   "     From : ", paste(startlocation), "\n",
++   "     To   : ", paste(endlocation), "\n \n"
++  ,sep = ""
++ )
+> if(nrow(TimeTable)==0){cat("\n     *** No More Buses Today *** \n \n \n")}else{
++ cat("\n      Next bus arriving in", TimeTable[1,"min_to_depart"], "minutes \n")
++ cat("    ┌───────────┬──────────┬──────────┐\n")
++ cat("    │ Departing │ Arriving │ Duration │\n")
++ cat("    ├───────────┼──────────┼──────────┤\n")
++ for (y in 1:min(nrow(TimeTable),5)) {
++   cat("    │  ", paste(TimeTable[y,'Depart']),"  │  ", paste(TimeTable[y,'Arrive'])," │   ",paste(TimeTable[y,'Duration']),"   │","\n")
++ }
++ 
++ if(nrow(TimeTable)>5){
++   cat("    │    ...    │",
++     if(nrow(TimeTable)-5<10){paste('',sep="")},
++     nrow(TimeTable)-5,
++     "Later │   ...    │ \n")
++ 
++   cat("    │  ", paste(TimeTable[nrow(TimeTable),'Depart']),"  │  ",
++       paste(TimeTable[nrow(TimeTable),'Arrive'])," │   ",
++       paste(TimeTable[nrow(TimeTable),'Duration']),
++       "   │","\n")
++ }
++ 
++ cat("    └───────────┴──────────┴──────────┘\n\n")
++ 
++ }
+> 
+> sink()
+> 
+> proc.time()
+   user  system elapsed 
+  0.092   0.020   0.111 
